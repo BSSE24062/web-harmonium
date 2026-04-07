@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Harmonium — Web Instrument</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300&display=swap');
+
+  :root {
+    --bg: #0d0b08;
+    --wood-dark: #1a0f05;
+    --wood-mid: #2d1a08;
+    --wood-light: #4a2c0f;
+    --wood-highlight: #7a4a1e;
+    --brass: #c8922a;
+    --brass-light: #e8b84a;
+    --brass-dark: #8a5e10;
+    --ivory: #f5f0e8;
+    --ivory-shadow: #d4cfc7;
+    --black-key: #1a1208;
+    --bellows-red: #8b1a1a;
+    --bellows-gold: #c8922a;
+    --active-glow: #ffcc44;
+    --reed-amber: #e8912a;
+    --text-gold: #c8922a;
+    --text-cream: #f0e8d0;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    font-family: 'Cormorant Garamond', serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    padding: 20px 10px 40px;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 50% 0%, rgba(200,146,42,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 20% 80%, rgba(139,26,26,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(74,44,15,0.15) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .header h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 900;
+    color: var(--brass-light);
+    letter-spacing: 0.15em;
+    text-shadow: 0 0 40px rgba(200,146,42,0.4), 0 2px 4px rgba(0,0,0,0.8);
+    line-height: 1;
+  }
+
+  .header p {
+    font-size: 1rem;
+    color: rgba(200,146,42,0.6);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    margin-top: 6px;
+    font-style: italic;
+  }
+
+  /* Main instrument body */
+  .instrument {
+    background:
+      linear-gradient(180deg, #2d1a08 0%, #1a0f05 40%, #0d0803 100%);
+    border-radius: 16px 16px 8px 8px;
+    border: 2px solid var(--wood-highlight);
+    box-shadow:
+      0 0 60px rgba(200,146,42,0.15),
+      0 20px 60px rgba(0,0,0,0.8),
+      inset 0 1px 0 rgba(200,146,42,0.3),
+      inset 0 -1px 0 rgba(0,0,0,0.5);
+    overflow: hidden;
+  }
+
+  /* Top decorative band */
+  .top-band {
+    height: 8px;
+    background: linear-gradient(90deg,
+      var(--brass-dark), var(--brass), var(--brass-light),
+      var(--brass), var(--brass-dark));
+    box-shadow: 0 2px 8px rgba(200,146,42,0.3);
+  }
+
+  /* Controls row */
+  .controls-row {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(200,146,42,0.2);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    min-width: 80px;
+  }
+
+  .control-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    color: rgba(200,146,42,0.7);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+
+  .control-value {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem;
+    color: var(--brass-light);
+    min-width: 30px;
+    text-align: center;
+  }
+
+  .btn-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+  }
+
+  .ctrl-btn {
+    width: 26px;
+    height: 26px;
+    background: linear-gradient(180deg, var(--wood-light) 0%, var(--wood-dark) 100%);
+    border: 1px solid var(--brass-dark);
+    border-radius: 4px;
+    color: var(--brass-light);
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.1s;
+    font-family: 'Cinzel', serif;
+    line-height: 1;
+  }
+
+  .ctrl-btn:hover {
+    background: linear-gradient(180deg, var(--wood-highlight) 0%, var(--wood-mid) 100%);
+    border-color: var(--brass);
+    box-shadow: 0 0 8px rgba(200,146,42,0.3);
+  }
+
+  .ctrl-btn:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  }
+
+  /* Slider controls */
+  .slider-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 140px;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: linear-gradient(90deg, var(--brass-dark), var(--brass));
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    width: 100%;
+  }
+
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, var(--brass-light), var(--brass-dark));
+    border: 1px solid var(--brass);
+    box-shadow: 0 0 6px rgba(200,146,42,0.4);
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+
+  input[type=range]::-webkit-slider-thumb:hover {
+    box-shadow: 0 0 12px rgba(200,146,42,0.7);
+  }
+
+  /* Bellows indicator */
+  .bellows {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 20px;
+    height: 44px;
+    border-bottom: 1px solid rgba(200,146,42,0.15);
+    background: linear-gradient(90deg, transparent, rgba(200,146,42,0.03), transparent);
+  }
+
+  .bellows-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    color: rgba(200,146,42,0.5);
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+  }
+
+  .bellows-visual {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .bellows-fold {
+    flex: 1;
+    height: 22px;
+    border: 1px solid rgba(139,26,26,0.5);
+    background: linear-gradient(180deg,
+      rgba(139,26,26,0.3) 0%,
+      rgba(200,146,42,0.1) 50%,
+      rgba(139,26,26,0.3) 100%);
+    border-radius: 1px;
+    transition: transform 0.1s, background 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .bellows-fold::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(200,146,42,0.1) 50%, transparent 100%);
+  }
+
+  .bellows-fold.active {
+    background: linear-gradient(180deg,
+      rgba(200,146,42,0.4) 0%,
+      rgba(255,200,80,0.2) 50%,
+      rgba(200,146,42,0.4) 100%);
+    border-color: rgba(200,146,42,0.7);
+    box-shadow: 0 0 6px rgba(200,146,42,0.3);
+  }
+
+  /* Drone buttons */
+  .drone-section {
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    border-bottom: 1px solid rgba(200,146,42,0.15);
+    flex-wrap: wrap;
+  }
+
+  .drone-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    color: rgba(200,146,42,0.5);
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+  }
+
+  .drone-btn {
+    padding: 4px 12px;
+    background: linear-gradient(180deg, var(--wood-mid), var(--wood-dark));
+    border: 1px solid var(--brass-dark);
+    border-radius: 3px;
+    color: rgba(200,146,42,0.7);
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.1em;
+  }
+
+  .drone-btn:hover {
+    border-color: var(--brass);
+    color: var(--brass-light);
+    background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+  }
+
+  .drone-btn.on {
+    background: linear-gradient(180deg, rgba(200,146,42,0.3), rgba(200,146,42,0.1));
+    border-color: var(--brass-light);
+    color: var(--brass-light);
+    box-shadow: 0 0 8px rgba(200,146,42,0.3), inset 0 0 6px rgba(200,146,42,0.15);
+  }
+
+  /* Keyboard area */
+  .keyboard-wrapper {
+    padding: 20px 20px 24px;
+    position: relative;
+  }
+
+  .keyboard-container {
+    position: relative;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 4px;
+  }
+
+  .keyboard {
+    position: relative;
+    display: flex;
+    height: 160px;
+    user-select: none;
+    touch-action: none;
+    min-width: 600px;
+    width: 100%;
+  }
+
+  /* White keys */
+  .white-key {
+    flex: 1;
+    position: relative;
+    height: 100%;
+    background: linear-gradient(180deg,
+      var(--ivory-shadow) 0%,
+      var(--ivory) 15%,
+      var(--ivory) 80%,
+      #e0dbd3 100%);
+    border: 1px solid #b0a898;
+    border-top: 2px solid #c8c0b0;
+    border-radius: 0 0 6px 6px;
+    cursor: pointer;
+    transition: background 0.05s;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 10px;
+    box-shadow:
+      1px 0 0 rgba(255,255,255,0.4) inset,
+      -1px 0 0 rgba(0,0,0,0.15) inset,
+      0 6px 12px rgba(0,0,0,0.4);
+    z-index: 1;
+  }
+
+  .white-key:hover {
+    background: linear-gradient(180deg,
+      #ede8e0 0%,
+      #faf7f2 15%,
+      #faf7f2 80%,
+      #e8e0d8 100%);
+  }
+
+  .white-key.active {
+    background: linear-gradient(180deg,
+      rgba(255,200,80,0.5) 0%,
+      rgba(255,220,120,0.8) 15%,
+      rgba(255,210,100,0.6) 80%,
+      rgba(200,160,50,0.4) 100%);
+    box-shadow:
+      0 0 16px rgba(255,200,80,0.5),
+      1px 0 0 rgba(255,255,255,0.4) inset,
+      0 6px 12px rgba(0,0,0,0.2);
+    transform: translateY(2px);
+  }
+
+  .key-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    color: rgba(80,60,30,0.6);
+    letter-spacing: 0.05em;
+    pointer-events: none;
+  }
+
+  .white-key.active .key-label {
+    color: rgba(140,80,10,0.9);
+  }
+
+  /* Black keys */
+  .black-key {
+    position: absolute;
+    width: 5.8%;
+    height: 60%;
+    background: linear-gradient(180deg,
+      #3a2a15 0%,
+      #1a1208 30%,
+      #0d0803 100%);
+    border: 1px solid #5a4020;
+    border-top: 2px solid #4a3018;
+    border-radius: 0 0 5px 5px;
+    cursor: pointer;
+    z-index: 2;
+    box-shadow:
+      2px 0 4px rgba(0,0,0,0.6),
+      -2px 0 4px rgba(0,0,0,0.6),
+      0 6px 10px rgba(0,0,0,0.7),
+      inset 1px 0 0 rgba(100,70,20,0.4);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 6px;
+    transition: background 0.05s;
+  }
+
+  .black-key:hover {
+    background: linear-gradient(180deg,
+      #4a3820 0%,
+      #2a1a0a 30%,
+      #150e05 100%);
+  }
+
+  .black-key.active {
+    background: linear-gradient(180deg,
+      rgba(200,146,42,0.6) 0%,
+      rgba(150,100,20,0.8) 30%,
+      rgba(100,60,10,0.6) 100%);
+    box-shadow:
+      0 0 14px rgba(200,146,42,0.5),
+      2px 0 4px rgba(0,0,0,0.4),
+      -2px 0 4px rgba(0,0,0,0.4),
+      0 4px 8px rgba(0,0,0,0.5);
+    transform: translateY(2px);
+  }
+
+  .black-key .key-label {
+    font-size: 0.45rem;
+    color: rgba(200,146,42,0.5);
+  }
+
+  .black-key.active .key-label {
+    color: rgba(255,200,80,0.9);
+  }
+
+  /* Octave markers */
+  .octave-marker {
+    position: absolute;
+    bottom: 28px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.5rem;
+    color: rgba(200,146,42,0.3);
+    pointer-events: none;
+    z-index: 3;
+  }
+
+  /* Reed stops (stops/registers) */
+  .stops-section {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-top: 1px solid rgba(200,146,42,0.15);
+    flex-wrap: wrap;
+  }
+
+  .stops-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.6rem;
+    color: rgba(200,146,42,0.5);
+    letter-spacing: 0.15em;
+    white-space: nowrap;
+  }
+
+  .stops {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .stop-knob {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+  }
+
+  .stop-knob-head {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%,
+      #5a3a15,
+      #1a0f05 70%);
+    border: 2px solid var(--brass-dark);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,0.6),
+      inset 0 1px 0 rgba(200,146,42,0.2);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stop-knob-head::after {
+    content: '';
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 12px;
+    background: rgba(200,146,42,0.5);
+    border-radius: 2px;
+    transition: all 0.2s;
+  }
+
+  .stop-knob.on .stop-knob-head {
+    background: radial-gradient(circle at 35% 30%,
+      var(--wood-highlight),
+      var(--brass-dark) 70%);
+    border-color: var(--brass);
+    box-shadow:
+      0 3px 6px rgba(0,0,0,0.4),
+      0 0 12px rgba(200,146,42,0.3),
+      inset 0 1px 0 rgba(200,146,42,0.4);
+  }
+
+  .stop-knob.on .stop-knob-head::after {
+    background: var(--brass-light);
+    box-shadow: 0 0 4px rgba(200,146,42,0.6);
+  }
+
+  .stop-knob-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    color: rgba(200,146,42,0.6);
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+
+  .stop-knob.on .stop-knob-label {
+    color: var(--brass-light);
+  }
+
+  /* Active notes display */
+  .notes-display {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 8px 20px;
+    border-top: 1px solid rgba(200,146,42,0.1);
+    min-height: 36px;
+    flex-wrap: wrap;
+  }
+
+  .notes-display-label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.55rem;
+    color: rgba(200,146,42,0.4);
+    letter-spacing: 0.1em;
+  }
+
+  .note-chip {
+    padding: 2px 8px;
+    background: rgba(200,146,42,0.15);
+    border: 1px solid rgba(200,146,42,0.3);
+    border-radius: 3px;
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    color: var(--brass-light);
+    animation: chipIn 0.1s ease-out;
+  }
+
+  @keyframes chipIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+  }
+
+  /* Bottom band */
+  .bottom-band {
+    height: 6px;
+    background: linear-gradient(90deg,
+      var(--brass-dark), var(--brass), var(--brass-light),
+      var(--brass), var(--brass-dark));
+  }
+
+  /* Keyboard shortcut hint */
+  .hint {
+    text-align: center;
+    margin-top: 14px;
+    font-size: 0.75rem;
+    color: rgba(200,146,42,0.35);
+    font-style: italic;
+    letter-spacing: 0.08em;
+  }
+
+  .hint span {
+    background: rgba(200,146,42,0.1);
+    border: 1px solid rgba(200,146,42,0.2);
+    border-radius: 3px;
+    padding: 1px 5px;
+    font-style: normal;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem;
+  }
+
+  /* Separator ornament */
+  .ornament {
+    text-align: center;
+    color: rgba(200,146,42,0.3);
+    font-size: 0.9rem;
+    letter-spacing: 0.5em;
+    margin: 0 20px;
+    padding: 4px 0;
+  }
+
+  /* Scrollbar */
+  .keyboard-container::-webkit-scrollbar {
+    height: 4px;
+  }
+  .keyboard-container::-webkit-scrollbar-track {
+    background: var(--wood-dark);
+  }
+  .keyboard-container::-webkit-scrollbar-thumb {
+    background: var(--brass-dark);
+    border-radius: 2px;
+  }
+
+  .controls-row .sep {
+    width: 1px;
+    background: linear-gradient(180deg, transparent, rgba(200,146,42,0.3), transparent);
+    align-self: stretch;
+    flex-shrink: 0;
+  }
+
+  @media (max-width: 600px) {
+    .keyboard { height: 120px; }
+    .controls-row { padding: 12px; gap: 8px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="header">
+    <h1>HARMONIUM</h1>
+    <p>Web Instrument &nbsp;·&nbsp; Crafted in Sound</p>
+  </div>
+
+  <div class="instrument">
+    <div class="top-band"></div>
+
+    <!-- Controls -->
+    <div class="controls-row">
+      <div class="control-group">
+        <div class="control-label">Octave</div>
+        <div class="btn-row">
+          <button class="ctrl-btn" id="oct-down">−</button>
+          <div class="control-value" id="oct-display">4</div>
+          <button class="ctrl-btn" id="oct-up">+</button>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="control-group">
+        <div class="control-label">Transpose</div>
+        <div class="btn-row">
+          <button class="ctrl-btn" id="trans-down">−</button>
+          <div class="control-value" id="trans-display">0</div>
+          <button class="ctrl-btn" id="trans-up">+</button>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="slider-group">
+        <div class="control-label">Volume</div>
+        <input type="range" id="volume" min="0" max="1" step="0.01" value="0.7">
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="slider-group">
+        <div class="control-label">Reverb</div>
+        <input type="range" id="reverb" min="0" max="1" step="0.01" value="0.3">
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="slider-group">
+        <div class="control-label">Tremolo</div>
+        <input type="range" id="tremolo" min="0" max="1" step="0.01" value="0">
+      </div>
+    </div>
+
+    <!-- Bellows -->
+    <div class="bellows">
+      <div class="bellows-label">BELLOWS</div>
+      <div class="bellows-visual" id="bellows-visual">
+        <!-- folds added by JS -->
+      </div>
+    </div>
+
+    <!-- Drone Section -->
+    <div class="drone-section">
+      <div class="drone-label">DRONES</div>
+      <button class="drone-btn" data-note="C2">Sa (C)</button>
+      <button class="drone-btn" data-note="G2">Pa (G)</button>
+      <button class="drone-btn" data-note="C3">Sa+ (C)</button>
+      <button class="drone-btn" data-note="F2">Ma (F)</button>
+      <button class="drone-btn" data-note="A2">Dha (A)</button>
+    </div>
+
+    <!-- Keyboard -->
+    <div class="keyboard-wrapper">
+      <div class="keyboard-container">
+        <div class="keyboard" id="keyboard" role="region" aria-label="Harmonium keyboard"></div>
+      </div>
+    </div>
+
+    <!-- Reed Stops -->
+    <div class="stops-section">
+      <div class="stops-label">REED STOPS</div>
+      <div class="stops" id="stops">
+        <div class="stop-knob on" data-stop="bass" title="Bass Reed">
+          <div class="stop-knob-head"></div>
+          <div class="stop-knob-label">BASS</div>
+        </div>
+        <div class="stop-knob on" data-stop="main" title="Main Reed">
+          <div class="stop-knob-head"></div>
+          <div class="stop-knob-label">MAIN</div>
+        </div>
+        <div class="stop-knob" data-stop="high" title="High Reed (octave up)">
+          <div class="stop-knob-head"></div>
+          <div class="stop-knob-label">HIGH</div>
+        </div>
+        <div class="stop-knob" data-stop="chorus" title="Chorus (slight detune)">
+          <div class="stop-knob-head"></div>
+          <div class="stop-knob-label">CHORUS</div>
+        </div>
+        <div class="stop-knob" data-stop="sub" title="Sub Bass (octave down)">
+          <div class="stop-knob-head"></div>
+          <div class="stop-knob-label">SUB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes display -->
+    <div class="notes-display" id="notes-display">
+      <div class="notes-display-label">PLAYING &nbsp;—</div>
+    </div>
+
+    <div class="bottom-band"></div>
+  </div>
+
+  <div class="hint">
+    Keyboard: <span>A S D F G H J K L ; '</span> (white) &nbsp;|&nbsp;
+    <span>W E T Y U O P</span> (black) &nbsp;|&nbsp;
+    <span>Z / X</span> Octave ±
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  AUDIO ENGINE
+// ============================================================
+let audioCtx = null;
+let masterGain, reverbNode, reverbGain, dryGain, tremoloLFO, tremoloGain;
+
+function ensureAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+  masterGain = audioCtx.createGain();
+  masterGain.gain.value = 0.7;
+
+  // Reverb (convolver with synthetic impulse)
+  reverbNode = audioCtx.createConvolver();
+  reverbNode.buffer = makeReverbBuffer(audioCtx, 2.5, 3);
+
+  reverbGain = audioCtx.createGain();
+  reverbGain.gain.value = 0.3;
+  dryGain = audioCtx.createGain();
+  dryGain.gain.value = 0.85;
+
+  // Tremolo
+  tremoloLFO = audioCtx.createOscillator();
+  tremoloLFO.type = 'sine';
+  tremoloLFO.frequency.value = 5.5;
+  tremoloGain = audioCtx.createGain();
+  tremoloGain.gain.value = 0;
+  tremoloLFO.connect(tremoloGain);
+  tremoloGain.connect(masterGain.gain);
+  tremoloLFO.start();
+
+  masterGain.connect(dryGain);
+  masterGain.connect(reverbNode);
+  reverbNode.connect(reverbGain);
+  dryGain.connect(audioCtx.destination);
+  reverbGain.connect(audioCtx.destination);
+}
+
+function makeReverbBuffer(ctx, duration, decay) {
+  const sampleRate = ctx.sampleRate;
+  const length = sampleRate * duration;
+  const impulse = ctx.createBuffer(2, length, sampleRate);
+  for (let c = 0; c < 2; c++) {
+    const ch = impulse.getChannelData(c);
+    for (let i = 0; i < length; i++) {
+      ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / length, decay);
+    }
+  }
+  return impulse;
+}
+
+// Harmonium-like oscillator synthesis
+function createReedVoice(freq, gain = 1) {
+  const osc1 = audioCtx.createOscillator();
+  const osc2 = audioCtx.createOscillator();
+  const osc3 = audioCtx.createOscillator();
+  const wave = makeHarmoniumWave();
+  osc1.setPeriodicWave(wave);
+  osc2.setPeriodicWave(wave);
+  osc3.setPeriodicWave(wave);
+  osc1.frequency.value = freq;
+  osc2.frequency.value = freq * 1.0008; // slight chorus
+  osc3.frequency.value = freq * 0.9996;
+
+  const vGain = audioCtx.createGain();
+  vGain.gain.value = 0;
+  osc1.connect(vGain);
+  osc2.connect(vGain);
+  osc3.connect(vGain);
+  vGain.connect(masterGain);
+
+  osc1.start(); osc2.start(); osc3.start();
+
+  // Attack
+  const now = audioCtx.currentTime;
+  vGain.gain.setValueAtTime(0, now);
+  vGain.gain.linearRampToValueAtTime(0.12 * gain, now + 0.025);
+  vGain.gain.linearRampToValueAtTime(0.09 * gain, now + 0.12);
+
+  return { osc1, osc2, osc3, vGain };
+}
+
+function makeHarmoniumWave() {
+  // Approximating harmonium reed spectrum: strong fundamentals, odd harmonics prominent
+  const n = 32;
+  const real = new Float32Array(n);
+  const imag = new Float32Array(n);
+  real[0] = 0;
+  const harmonics = [
+    [1, 1.0], [2, 0.45], [3, 0.55], [4, 0.2],
+    [5, 0.35], [6, 0.12], [7, 0.18], [8, 0.08],
+    [9, 0.12], [10, 0.05], [11, 0.08], [12, 0.03],
+    [13, 0.05], [14, 0.02], [15, 0.03]
+  ];
+  for (const [h, a] of harmonics) {
+    if (h < n) imag[h] = a;
+  }
+  return audioCtx.createPeriodicWave(real, imag, { disableNormalization: false });
+}
+
+function stopVoice(voice) {
+  const now = audioCtx.currentTime;
+  voice.vGain.gain.cancelScheduledValues(now);
+  voice.vGain.gain.setValueAtTime(voice.vGain.gain.value, now);
+  voice.vGain.gain.linearRampToValueAtTime(0, now + 0.1);
+  setTimeout(() => {
+    try { voice.osc1.stop(); voice.osc2.stop(); voice.osc3.stop(); } catch(e) {}
+  }, 200);
+}
+
+// ============================================================
+//  STATE
+// ============================================================
+let octave = 4;
+let transpose = 0;
+let activeVoices = {};     // noteId -> [voice, ...]
+let droneVoices = {};      // noteId -> [voice]
+let activeNotes = new Set();
+
+const stops = { bass: true, main: true, high: false, chorus: false, sub: false };
+const stopGains = { bass: 0.8, main: 1.0, high: 0.6, chorus: 0.5, sub: 0.7 };
+const stopDetune = { bass: 0, main: 0, high: 12, chorus: 0.15, sub: -12 };
+
+// ============================================================
+//  NOTES / FREQUENCY
+// ============================================================
+const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+const WHITE_NOTES = ['C','D','E','F','G','A','B'];
+const BLACK_NOTES = { 'C':'C#', 'D':'D#', 'F':'F#', 'G':'G#', 'A':'A#' };
+
+function noteToFreq(note, oct) {
+  const n = NOTE_NAMES.indexOf(note);
+  if (n < 0) return null;
+  const midi = (oct + 1) * 12 + n + transpose;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function parseNoteOct(noteStr) {
+  const m = noteStr.match(/^([A-G]#?)(\d)$/);
+  if (!m) return null;
+  return { note: m[1], oct: parseInt(m[2]) };
+}
+
+// ============================================================
+//  KEYBOARD LAYOUT  (2 octaves + a few)
+// ============================================================
+// We'll show C3 to C6 (white keys), 3 octaves
+const NUM_OCTAVES = 3;
+const START_OCTAVE = 3;
+
+// Computer keyboard mapping
+const keyMap = {
+  // White keys (lower row + home row)
+  'a': { note:'C', offset:0 },
+  's': { note:'D', offset:0 },
+  'd': { note:'E', offset:0 },
+  'f': { note:'F', offset:0 },
+  'g': { note:'G', offset:0 },
+  'h': { note:'A', offset:0 },
+  'j': { note:'B', offset:0 },
+  'k': { note:'C', offset:1 },
+  'l': { note:'D', offset:1 },
+  ';': { note:'E', offset:1 },
+  "'": { note:'F', offset:1 },
+  // Black keys
+  'w': { note:'C#', offset:0 },
+  'e': { note:'D#', offset:0 },
+  't': { note:'F#', offset:0 },
+  'y': { note:'G#', offset:0 },
+  'u': { note:'A#', offset:0 },
+  'o': { note:'C#', offset:1 },
+  'p': { note:'D#', offset:1 },
+};
+
+// ============================================================
+//  BUILD KEYBOARD DOM
+// ============================================================
+function buildKeyboard() {
+  const kb = document.getElementById('keyboard');
+  kb.innerHTML = '';
+
+  // Count white keys
+  const totalWhite = NUM_OCTAVES * 7 + 1; // C3..C6 inclusive
+  const whiteWidth = 100 / totalWhite;
+
+  let whiteIdx = 0;
+
+  for (let o = 0; o < NUM_OCTAVES; o++) {
+    const curOct = START_OCTAVE + o;
+    for (let ni = 0; ni < 7; ni++) {
+      const noteName = WHITE_NOTES[ni];
+      const noteId = noteName + curOct;
+
+      // White key
+      const wk = document.createElement('div');
+      wk.className = 'white-key';
+      wk.dataset.note = noteId;
+      wk.style.width = whiteWidth + '%';
+      const kbHint = getKeyboardHint(noteName, o);
+      wk.innerHTML = `<span class="key-label">${kbHint || ''}</span>`;
+      wk.setAttribute('aria-label', noteId);
+      kb.appendChild(wk);
+
+      // Black key if applicable
+      if (BLACK_NOTES[noteName]) {
+        const sharpName = BLACK_NOTES[noteName];
+        const sharpId = sharpName + curOct;
+        const bk = document.createElement('div');
+        bk.className = 'black-key';
+        bk.dataset.note = sharpId;
+        // Position: right edge of this white key, offset left by half black key width
+        const leftPct = (whiteIdx + 1) * whiteWidth - (2.9);
+        bk.style.left = leftPct + '%';
+        bk.style.top = '0';
+        const bkHint = getKeyboardHint(sharpName, o);
+        bk.innerHTML = `<span class="key-label">${bkHint || ''}</span>`;
+        bk.setAttribute('aria-label', sharpId);
+        kb.appendChild(bk);
+      }
+
+      whiteIdx++;
+    }
+  }
+
+  // Last C
+  const lastOct = START_OCTAVE + NUM_OCTAVES;
+  const noteId = 'C' + lastOct;
+  const wk = document.createElement('div');
+  wk.className = 'white-key';
+  wk.dataset.note = noteId;
+  wk.style.width = whiteWidth + '%';
+  wk.innerHTML = `<span class="key-label"></span>`;
+  kb.appendChild(wk);
+
+  // Event listeners
+  kb.querySelectorAll('.white-key, .black-key').forEach(key => {
+    key.addEventListener('mousedown', e => { e.preventDefault(); playKey(key.dataset.note, key); });
+    key.addEventListener('mouseenter', e => { if (e.buttons === 1) playKey(key.dataset.note, key); });
+    key.addEventListener('mouseup', () => stopKey(key.dataset.note, key));
+    key.addEventListener('mouseleave', () => stopKey(key.dataset.note, key));
+    key.addEventListener('touchstart', e => { e.preventDefault(); playKey(key.dataset.note, key); }, { passive: false });
+    key.addEventListener('touchend', e => { e.preventDefault(); stopKey(key.dataset.note, key); });
+  });
+}
+
+function getKeyboardHint(note, octaveOffset) {
+  if (octaveOffset !== 0) {
+    // Second octave
+    const map2 = { 'C':'k','D':'l','E':';','F':"'",'C#':'o','D#':'p' };
+    return map2[note] || '';
+  }
+  const map1 = { 'C':'a','D':'s','E':'d','F':'f','G':'g','A':'h','B':'j',
+                  'C#':'w','D#':'e','F#':'t','G#':'y','A#':'u' };
+  return map1[note] || '';
+}
+
+// ============================================================
+//  PLAY / STOP
+// ============================================================
+function playNote(noteId) {
+  if (activeVoices[noteId]) return;
+  ensureAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const parsed = parseNoteOct(noteId);
+  if (!parsed) return;
+
+  const voices = [];
+  for (const [stopName, on] of Object.entries(stops)) {
+    if (!on) continue;
+    const dt = stopDetune[stopName];
+    const baseFreq = noteToFreq(parsed.note, parsed.oct);
+    const freq = baseFreq * Math.pow(2, dt / 12);
+    const v = createReedVoice(freq, stopGains[stopName]);
+    voices.push(v);
+    // Chorus: extra slightly detuned voice
+    if (stopName === 'chorus') {
+      const v2 = createReedVoice(freq * 1.003, stopGains[stopName] * 0.7);
+      voices.push(v2);
+    }
+  }
+
+  activeVoices[noteId] = voices;
+  activeNotes.add(noteId);
+  updateBellows(true);
+  updateNotesDisplay();
+}
+
+function stopNote(noteId) {
+  if (!activeVoices[noteId]) return;
+  for (const v of activeVoices[noteId]) stopVoice(v);
+  delete activeVoices[noteId];
+  activeNotes.delete(noteId);
+  if (activeNotes.size === 0) updateBellows(false);
+  updateNotesDisplay();
+}
+
+function playKey(noteId, el) {
+  playNote(noteId);
+  el.classList.add('active');
+}
+
+function stopKey(noteId, el) {
+  stopNote(noteId);
+  el.classList.remove('active');
+}
+
+function getKeyEl(noteId) {
+  return document.querySelector(`[data-note="${noteId}"]`);
+}
+
+// ============================================================
+//  COMPUTER KEYBOARD
+// ============================================================
+const pressedKeys = new Set();
+
+document.addEventListener('keydown', e => {
+  if (e.repeat) return;
+  if (e.target.tagName === 'INPUT') return;
+
+  const k = e.key.toLowerCase();
+
+  // Octave shortcuts
+  if (k === 'z') { changeOctave(-1); return; }
+  if (k === 'x') { changeOctave(1); return; }
+
+  if (keyMap[k]) {
+    const { note, offset } = keyMap[k];
+    const oct = octave + offset;
+    const noteId = note + oct;
+    pressedKeys.add(k);
+    const el = getKeyEl(noteId);
+    if (el) playKey(noteId, el);
+    else playNote(noteId);
+  }
+});
+
+document.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (keyMap[k]) {
+    const { note, offset } = keyMap[k];
+    const oct = octave + offset;
+    const noteId = note + oct;
+    pressedKeys.delete(k);
+    const el = getKeyEl(noteId);
+    if (el) stopKey(noteId, el);
+    else stopNote(noteId);
+  }
+});
+
+// ============================================================
+//  OCTAVE & TRANSPOSE
+// ============================================================
+function changeOctave(d) {
+  octave = Math.max(1, Math.min(6, octave + d));
+  document.getElementById('oct-display').textContent = octave;
+  rebuildKeyLabels();
+}
+
+function changeTranspose(d) {
+  transpose = Math.max(-6, Math.min(6, transpose + d));
+  document.getElementById('trans-display').textContent = (transpose >= 0 ? '+' : '') + transpose;
+}
+
+function rebuildKeyLabels() {
+  // Update note IDs without full rebuild
+  document.querySelectorAll('.white-key, .black-key').forEach(key => {
+    const baseNote = key.dataset.note.replace(/\d/, '');
+    const currentOct = parseInt(key.dataset.note.match(/\d/)[0]);
+    // Rebuild - just rebuild keyboard
+  });
+  // Actually rebuild keyboard since octave changes all note IDs
+  // But we need to preserve start octave logic…
+  // The keyboard shows START_OCTAVE..START_OCTAVE+NUM_OCTAVES always.
+  // The computer keyboard maps to `octave` variable. Only labels change.
+  buildKeyboard();
+}
+
+document.getElementById('oct-down').addEventListener('click', () => changeOctave(-1));
+document.getElementById('oct-up').addEventListener('click', () => changeOctave(1));
+document.getElementById('trans-down').addEventListener('click', () => changeTranspose(-1));
+document.getElementById('trans-up').addEventListener('click', () => changeTranspose(1));
+
+// ============================================================
+//  VOLUME / REVERB / TREMOLO
+// ============================================================
+document.getElementById('volume').addEventListener('input', e => {
+  ensureAudio();
+  masterGain.gain.value = parseFloat(e.target.value);
+});
+
+document.getElementById('reverb').addEventListener('input', e => {
+  ensureAudio();
+  const v = parseFloat(e.target.value);
+  reverbGain.gain.value = v * 0.8;
+  dryGain.gain.value = 1 - v * 0.4;
+});
+
+document.getElementById('tremolo').addEventListener('input', e => {
+  ensureAudio();
+  const v = parseFloat(e.target.value);
+  tremoloGain.gain.value = v * 0.06;
+});
+
+// ============================================================
+//  REED STOPS
+// ============================================================
+document.getElementById('stops').addEventListener('click', e => {
+  const knob = e.target.closest('.stop-knob');
+  if (!knob) return;
+  const s = knob.dataset.stop;
+  stops[s] = !stops[s];
+  knob.classList.toggle('on', stops[s]);
+});
+
+// ============================================================
+//  DRONE
+// ============================================================
+document.querySelectorAll('.drone-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    ensureAudio();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    const noteStr = btn.dataset.note;
+    if (droneVoices[noteStr]) {
+      for (const v of droneVoices[noteStr]) stopVoice(v);
+      delete droneVoices[noteStr];
+      btn.classList.remove('on');
+    } else {
+      const parsed = parseNoteOct(noteStr);
+      const freq = noteToFreq(parsed.note, parsed.oct);
+      const v1 = createReedVoice(freq, 0.6);
+      const v2 = createReedVoice(freq * 2, 0.3); // octave above
+      droneVoices[noteStr] = [v1, v2];
+      btn.classList.add('on');
+    }
+  });
+});
+
+// ============================================================
+//  BELLOWS VISUAL
+// ============================================================
+function buildBellows() {
+  const bv = document.getElementById('bellows-visual');
+  bv.innerHTML = '';
+  for (let i = 0; i < 16; i++) {
+    const fold = document.createElement('div');
+    fold.className = 'bellows-fold';
+    bv.appendChild(fold);
+  }
+}
+
+let bellowsAnim = null;
+let bellowsPhase = 0;
+function updateBellows(playing) {
+  const folds = document.querySelectorAll('.bellows-fold');
+  if (playing) {
+    if (bellowsAnim) return;
+    bellowsAnim = setInterval(() => {
+      bellowsPhase = (bellowsPhase + 1) % 16;
+      folds.forEach((f, i) => {
+        f.classList.toggle('active', i === bellowsPhase || i === (bellowsPhase + 8) % 16);
+      });
+    }, 80);
+  } else {
+    clearInterval(bellowsAnim);
+    bellowsAnim = null;
+    folds.forEach(f => f.classList.remove('active'));
+  }
+}
+
+// ============================================================
+//  NOTES DISPLAY
+// ============================================================
+function updateNotesDisplay() {
+  const disp = document.getElementById('notes-display');
+  disp.innerHTML = `<div class="notes-display-label">PLAYING &nbsp;—</div>`;
+  for (const n of activeNotes) {
+    const chip = document.createElement('div');
+    chip.className = 'note-chip';
+    chip.textContent = n;
+    disp.appendChild(chip);
+  }
+}
+
+// ============================================================
+//  INIT
+// ============================================================
+buildKeyboard();
+buildBellows();
+</script>
+</body>
+</html>
