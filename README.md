@@ -11,7 +11,6 @@ A fully functional, browser-based harmonium instrument with authentic reed synth
 - **Triple-oscillator voicing** per note for warmth, depth, and natural chorus
 - **Convolution reverb** with synthetic impulse response
 - **Adjustable tremolo** via LFO modulation
-- **Drone strings** — Sa, Pa, Ma, Dha, Sa+ (Indian classical tuning) that sustain independently
 
 ### Reed Stops (like a real harmonium)
 | Stop | Description |
